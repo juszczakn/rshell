@@ -1,6 +1,9 @@
 use std::os::env;
 use std::io::buffered::BufferedReader;
 use std::io;
+use std::io::process::ProcessConfig;
+
+static DIRECTORY: &'static str = "Hello";
 
 fn get_working_dir() -> ~str {
     let elts: ~[(~str,~str)] = env();
@@ -15,13 +18,11 @@ fn get_working_dir() -> ~str {
     working_dir
 }
 
-fn match_cmd(cmd: &~str) -> ~[~str]{
+fn create_cmd(cmd: &str) -> ~[~str]{
     let mut cmd_arr: ~[~str] = ~[];
-
-    if cmd.slice(0,2) == "cd" {
-        cmd_arr.push(cmd.slice(0, 2).clone());
-        cmd_arr.push(cmd.slice(3, cmd_arr.len()).clone());
-        //println("done");
+    for word in cmd.words() {
+        let s: ~str = word.into_owned();
+        cmd_arr.push(s);
     }
     cmd_arr
 }
@@ -32,7 +33,10 @@ fn read_stdin() {
         let line = reader.read_line();
         match line {
             Some(ref s) => {
-                let cmd = match_cmd(s);
+                let cmd = create_cmd(*s);
+                let proc_config: ProcessConfig = ProcessConfig {
+                    program = *cmd[0];
+                };
             },
             None => println("None")
         }
