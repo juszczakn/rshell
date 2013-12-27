@@ -20,7 +20,6 @@ Very basic. Allows for changing directories and calling executables found in you
 Problems
 =========
 
-- Currently fails when an invalid command is given.
 - Does not support input
 
 License
