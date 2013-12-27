@@ -1,7 +1,7 @@
 rshell
 =========
 
-A basic shell written and tested with rust-0.9pre. Not even close to garunteed to compile with later versions, as rust is still changing very quickly.
+A basic shell written and tested with rust-0.9pre. Not even close to guaranteed to compile with later versions, as rust is still changing very quickly.
 
 As my first program, this was just to get a feeling for the language, and I'm sure is very buggy.
 
