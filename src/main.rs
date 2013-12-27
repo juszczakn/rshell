@@ -6,19 +6,26 @@ use std::run::{Process, ProcessOptions, ProcessOutput};
 /* Compiles and tested with rust-0.9pre.
 A very basic shell program which allows for changing directories */
 
-fn get_working_dir(old_dir: bool) -> ~str {
+enum DirType {
+    Home,
+    Pwd,
+    OldPwd
+}
+
+#[allow(dead_assignment)]
+fn get_working_dir(d: DirType) -> ~str {
+    let mut match_dir: ~str = ~"";
+    match d {
+        Home => match_dir = ~"HOME",
+        OldPwd => match_dir = ~"OLDPWD",
+        Pwd => match_dir = ~"PWD",
+    }
+
     let elts: ~[(~str,~str)] = env();
-    
     for elt in elts.iter() {
         let (ref s1, ref s2): (~str,~str) = *elt;
-        if old_dir {
-            if *s1 == ~"OLDPWD" {
-                return s2.clone()
-            }
-        } else {
-            if *s1 == ~"PWD" {
-                return s2.clone()
-            }
+        if *s1 == match_dir {
+            return s2.clone()
         }
     }
     return ~""
@@ -28,12 +35,12 @@ fn set_working_dir(d: &str) {
     if d.len() == 0 {
         return
     }
-    let old_pwd: &str = get_working_dir(false);
+    let old_pwd: &str = get_working_dir(Pwd);
     let mut new_pwd: Path = Path::new(old_pwd);
 
     // 45 == '-', go to old_pwd
     if d[0] == 45 {
-        new_pwd = Path::new(get_working_dir(true));
+        new_pwd = Path::new(get_working_dir(OldPwd));
         // 47 == '/', absolute path
     } else if d[0] == 47 {
         new_pwd = Path::new(d);
@@ -71,13 +78,15 @@ fn create_process(s: &str) -> Option<Process> {
     }
     
     if cmd == "cd" {
-        let mut cd_dir: Path = Path::new("/home/nick");
+        let mut cd_dir: Path = Path::new(get_working_dir(Home));
         if args.len() > 0 {
             let mut new_path = args[0].clone();
             if new_path[0] == 45 {
-                new_path = get_working_dir(true);
+                new_path = get_working_dir(OldPwd);
             }
-            cd_dir = Path::new(new_path);
+            if new_path[0] != 126 {
+                cd_dir = Path::new(new_path);
+            }
         }
         let ret_val: bool = std::os::change_dir(&cd_dir);
 
@@ -130,14 +139,14 @@ fn read_stdin() {
             if new_proc.is_some() {
                 handle_process(~(new_proc.unwrap()));
             }
-            print(format!("{}$> ", get_working_dir(false)));
+            print(format!("{}$> ", get_working_dir(Pwd)));
             std::io::stdio::flush();
         }
     }
 }
 
 fn main() {
-    print(format!("{}$> ", get_working_dir(false)));
+    print(format!("{}$> ", get_working_dir(Pwd)));
     std::io::stdio::flush();
     read_stdin();
 }
