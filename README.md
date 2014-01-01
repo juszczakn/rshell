@@ -10,7 +10,7 @@ Compile
 
 No dependencies on anything outside of the stdlib, simply compile with
 
-```rustc main.rs```
+```rustc src/rshell.rs```
 
 Usage
 =========
