@@ -1,3 +1,8 @@
+#[crate_id(name="rshell", vers="0.0.1", author="Nicholas Juszczak")];
+
+/* This program is distributed under the MIT license.
+Author: Nicholas Juszczak <juszczakn@gmail.com> */
+
 use std::os::env;
 use std::{io, task};
 use std::io::buffered::BufferedReader;
@@ -12,7 +17,8 @@ enum DirType {
     OldPwd
 }
 
-fn get_working_dir(d: DirType) -> ~str {
+/* Get a given directory based on environment variables */
+fn get_directory(d: DirType) -> ~str {
     let match_dir: ~str = match d {
         Home => ~"HOME",
         OldPwd => ~"OLDPWD",
@@ -34,12 +40,12 @@ fn set_working_dir(d: &str) {
     if d.len() == 0 {
         return
     }
-    let old_pwd: &str = get_working_dir(Pwd);
+    let old_pwd: &str = get_directory(Pwd);
     let mut new_pwd: Path = Path::new(old_pwd);
 
     // 45 == '-', go to old_pwd
     if d[0] == 45 {
-        new_pwd = Path::new(get_working_dir(OldPwd));
+        new_pwd = Path::new(get_directory(OldPwd));
         // 47 == '/', absolute path
     } else if d[0] == 47 {
         new_pwd = Path::new(d);
@@ -100,10 +106,10 @@ fn create_process(s: &str) -> bool {
     /* 'cd' must be handled in-process, as we want the current
     processes current-directory to change */
     if cmd == ~"cd" {
-        let mut cd_dir: Path = Path::new(get_working_dir(Home));
+        let mut cd_dir: Path = Path::new(get_directory(Home));
         if args.len() > 0 {
             let new_path = match args[0][0] {
-                45 => get_working_dir(OldPwd),
+                45 => get_directory(OldPwd),
                 _ => args[0].clone()
             };
             if new_path[0] != 126 {
@@ -145,14 +151,14 @@ fn read_stdin() {
                 return
             }
             create_process(line);
-            print(format!("{}$> ", get_working_dir(Pwd)));
+            print(format!("{}$> ", get_directory(Pwd)));
             std::io::stdio::flush();
         }
     }
 }
 
 fn main() {
-    print(format!("{}$> ", get_working_dir(Pwd)));
+    print(format!("{}$> ", get_directory(Pwd)));
     std::io::stdio::flush();
     read_stdin();
     std::os::set_exit_status(0);
