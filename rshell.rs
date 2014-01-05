@@ -3,10 +3,12 @@
 /* This program is distributed under the MIT license.
 Author: Nicholas Juszczak <juszczakn@gmail.com> */
 
+use std::{io, str, task, result};
 use std::os::env;
-use std::{io, task};
-use std::io::buffered::BufferedReader;
-use std::run::{Process, ProcessOptions, ProcessOutput};
+use std::io::buffered::{BufferedReader, BufferedWriter};
+use std::io::process::{Process, ProcessConfig, CreatePipe};
+use std::io::pipe::PipeStream;
+//use std::run::{Process, ProcessOptions, ProcessOutput};
 
 /* Compiles and tested with rust-0.9pre.
 A very basic shell program which allows for changing directories */
@@ -28,7 +30,7 @@ fn read_stdin() {
     let mut reader = BufferedReader::new(io::stdin());
     while !reader.eof() {
         let line = reader.read_line();
-        if line.is_some(){
+        if line.is_some() {
             let line: ~str = line.unwrap();
             if line == ~"exit\n" {
                 return
@@ -85,27 +87,52 @@ fn create_process(s: &str) -> bool {
 
     let args = args;
     let result = do task::try {
-        let opts: ProcessOptions = ProcessOptions::new();
-        let launch: Option<Process> = Process::new(cmd, args, opts);
-        handle_process(~(launch.unwrap()))
+        //let opts: ProcessOptions = ProcessOptions::new();
+        let env_ref: &[(~str, ~str)] = env();
+        let dir_ref: &str = get_directory(Pwd);
+        // CreatePipe(readbool, writebool)
+        let config = ProcessConfig {program: cmd, args: args, env: Some(env_ref),
+                                    cwd: Some(dir_ref),
+                                    io: &[CreatePipe(true, false), CreatePipe(true, true)]};
+        let launch: Option<Process> = Process::new(config);
+        if launch.is_some() {
+            handle_process(~(launch.unwrap()));
+        }
     };
     return result.is_ok()
 }
 
 /* Given a running process, check status and print stdout, stderr */
-fn handle_process(new_proc: ~Process) -> bool {
-    let mut new_proc = new_proc;
-    let proc_out: ProcessOutput = new_proc.finish_with_output();
-    let output: &str = std::str::from_utf8(proc_out.output);
-    let error: &str = std::str::from_utf8(proc_out.error);
-    if output.len() != 0 {
-        println(format!("{}", output));
-    }
-    if error.len() != 0 {
-        println(format!("{}", error));
-    }
-    if !proc_out.status.success() {
+fn handle_process(mut new_proc: ~Process) -> bool {
+    if new_proc.io[1].is_none() {
         return false
+    }
+    //let mut pipe: PipeStream = new_proc.io[0].unwrap();
+    let mut out_buf: ~[u8] = ~[];
+    let mut in_buf: ~[u8] = ~[];
+    let mut reader = io::stdin();
+
+    while true {
+        // while stdout from child proc is full
+        while true {
+            match new_proc.io[1].read_byte() {
+                Some(b) => out_buf.push(b),
+                None => break
+            }
+        }
+
+        if out_buf.len() > 0 {
+            let s = str::from_utf8(out_buf);
+            print(s);
+        } else {
+            break
+        }
+        out_buf = ~[];
+
+        if in_buf.len() > 0 {
+            new_proc.io[0].write(in_buf);
+            in_buf = ~[];
+        }
     }
     true
 }
