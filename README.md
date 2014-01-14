@@ -8,9 +8,7 @@ As my first program, this was just to get a feeling for the language, and I'm su
 Compile
 =========
 
-No dependencies on anything outside of the stdlib, simply compile with
-
-```rustc src/rshell.rs```
+No dependencies on anything outside of the stdlib, simply compile with ```make``` and the executable should be named rshell.
 
 Usage
 =========
